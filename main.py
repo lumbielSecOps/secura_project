@@ -3,11 +3,13 @@ from database import engine
 from models import Base
 from security import hash_password, verify_password
 from auth_routes import router as auth_router
+from document_routes import router as document_router
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.include_router(auth_router)
+app.include_router(document_router)
 
 @app.get("/")
 def read_root():
