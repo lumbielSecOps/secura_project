@@ -12,11 +12,12 @@
 
         <input id="receiver_id" type="number" placeholder="Your Patient ID">
 
-        <button onclick="getDocs()">Get Document</button>
-        <button onclick="logout()" style="margin-top: 10px;">Logout</button>
+        <button type="button" onclick="getDocs()">Get Document</button>
+        <button type="button" onclick="logout()" style="margin-top: 10px;">Logout</button>
 
         <div id="msg" class="msg" style="display:none"></div>
         <div id="docs" style="margin-top:16px"></div>
+        <div id="viewer" style="margin-top:20px;"></div>
     </div>
 
     <script>
@@ -36,11 +37,11 @@
             const m = document.getElementById('msg');
             const div = document.getElementById('docs');
 
-            if(!rid){
+            if (!rid) {
                 m.style.display = "block";
                 m.className = "msg error";
                 m.textContent = "Please enter your Patient ID"
-
+                return;
             }
             const res = await fetch(`http://127.0.0.1:8000/documents/${rid}`,
                 { headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
@@ -54,7 +55,9 @@
                 <div style="border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:10px">
                     <p style="margin:0 0 4px;font-weight:500">${d.filename}</p>
                     <p style="margin:0;font-size:12px;color:#777">From sender ID: ${d.sender_id} &nbsp;|&nbsp; Status: ${d.status}</p>
-                </div>
+                
+                    <button onclick="downloadDocument(${d.id})">View/Download</button>
+                    </div>
             `).join('');
             } else {
                 div.innerHTML = '';
@@ -64,13 +67,47 @@
             }
         }
 
+        async function downloadDocument(documentId) {
+            const token = localStorage.getItem("token");
+            const viewer = document.getElementById("viewer");
+
+            const res = await fetch(
+                `http://127.0.0.1:8000/download-document/${documentId}`,
+                {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!res.ok) {
+                const data = await res.json();
+                alert(data.detail || "Could not open document.");
+                return;
+            }
+
+            const blob = await res.blob();
+            const fileURL = URL.createObjectURL(blob);
+
+            viewer.innerHTML = `
+        <h3 style="font-size:16px;margin-bottom:10px;">Document Preview</h3>
+        <iframe 
+            src="${fileURL}" 
+            width="100%" 
+            height="500px"
+            style="border:1px solid #ddd;border-radius:8px;">
+        </iframe>
+    `;
+        viewer.scrollIntoView({ behavior: 'smooth' });
+        }
+
         async function logout() {
             const token = localStorage.getItem("token");
 
-            await fetch("http://127.0.0.1:8000/logout", 
-              { method: 'POST', headers: { 'accept': 'application/json', "Authorization" : `Bearer ${token}` } }
+            await fetch("http://127.0.0.1:8000/logout",
+                { method: 'POST', headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
             );
-        
+
             localStorage.clear();
             window.location.href = 'index.html';
         }

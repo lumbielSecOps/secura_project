@@ -6,7 +6,7 @@ from database import SessionLocal
 from models import Document, Audit_Log, User
 from datetime import datetime
 from auth_routes import get_current_user, require_role
-import os
+import os, mimetypes
 
 router = APIRouter()
 
@@ -153,7 +153,8 @@ def download_document(
 
     decrypted_content = fernet.decrypt(encrypted_content)
 
-    decrypted_path = os.path.join(DECRYPT_DIR, document.filename)
+    safe_decrypted_filename = f"decrypted_{document.id}_{document.filename}"
+    decrypted_path = os.path.join(DECRYPT_DIR, safe_decrypted_filename)
 
     with open(decrypted_path, "wb") as f:
         f.write(decrypted_content)
@@ -166,12 +167,17 @@ def download_document(
 
     db.add(new_log)
     db.commit()
+
+    original_filename = document.filename
+    
     db.close()
+
+    media_type, _ = mimetypes.guess_type(original_filename)
 
     return FileResponse(
         decrypted_path,
-        filename=document.filename,
-        media_type="application/octet-stream"
+        media_type=media_type or "application/pdf",
+        headers= {"Content-Disposition": f'inline; filename="{original_filename}"'}
     )
 
 #get audit logs
