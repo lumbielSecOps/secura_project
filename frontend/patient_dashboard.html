@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Secura_Patient</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="card">
+        <h2>Patient Dashboard</h2>
+
+        <input id="receiver_id" type="number" placeholder="Your Patient ID">
+
+        <button onclick="getDocs()">Get Document</button>
+        <button onclick="logout()" style="margin-top: 10px;">Logout</button>
+
+        <div id="msg" class="msg" style="display:none"></div>
+        <div id="docs" style="margin-top:16px"></div>
+    </div>
+
+    <script>
+        function checkAccess() {
+            const token = localStorage.getItem("token");
+            const role = localStorage.getItem("role");
+
+            if (!token || role !== "patient") {
+                window.location.href = 'index.html';
+            }
+        }
+
+        checkAccess();
+        async function getDocs() {
+            const token = localStorage.getItem("token");
+            const rid = document.getElementById('receiver_id').value;
+            const m = document.getElementById('msg');
+            const div = document.getElementById('docs');
+
+            if(!rid){
+                m.style.display = "block";
+                m.className = "msg error";
+                m.textContent = "Please enter your Patient ID"
+
+            }
+            const res = await fetch(`http://127.0.0.1:8000/documents/${rid}`,
+                { headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
+            );
+
+            const data = await res.json();
+
+            if (res.ok && data.documents) {
+                m.style.display = 'none';
+                div.innerHTML = data.documents.map(d => `
+                <div style="border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:10px">
+                    <p style="margin:0 0 4px;font-weight:500">${d.filename}</p>
+                    <p style="margin:0;font-size:12px;color:#777">From sender ID: ${d.sender_id} &nbsp;|&nbsp; Status: ${d.status}</p>
+                </div>
+            `).join('');
+            } else {
+                div.innerHTML = '';
+                m.style.display = 'block';
+                m.className = 'msg error';
+                m.textContent = 'No documents found';
+            }
+        }
+
+        async function logout() {
+            const token = localStorage.getItem("token");
+
+            await fetch("http://127.0.0.1:8000/logout", 
+              { method: 'POST', headers: { 'accept': 'application/json', "Authorization" : `Bearer ${token}` } }
+            );
+        
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

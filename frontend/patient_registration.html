@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secura Patient Register</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="card">
+    <h2>Patient Registration</h2>
+    <p style="font-size:13px;color:#555;">Create a patient account</p>
+
+    <label>Username:</label>
+    <input id="username" type="text" placeholder="Username"><br>
+
+    <label>Email:</label>
+    <input id="email" type="email" placeholder="Email"><br>
+
+    <label>Password:</label>
+    <input id="password" type="password" placeholder="Password"><br>
+
+    <button onclick="registerPatient()">Register</button>
+    <button onclick="window.location.href='login.html'" style="margin-top:10px;">Back to Login</button>
+
+    <div id="msg" class="msg" style="display:none"></div>
+</div>
+
+<script>
+async function registerPatient() {
+    const username = document.getElementById("username").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const m = document.getElementById("msg");
+    m.style.display = "block";
+
+    if (!username || !email || !password) {
+        m.className = "msg error";
+        m.textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const res = await fetch(
+        `http://127.0.0.1:8000/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&role=patient`,
+        {
+            method: "POST",
+            headers: { "accept": "application/json" }
+        }
+    );
+
+    const data = await res.json();
+
+    if (res.ok) {
+        m.className = "msg success";
+        m.textContent = "Patient account created successfully. Redirecting to login...";
+
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 1000);
+    } else {
+        m.className = "msg error";
+        m.textContent = data.detail || "Registration failed.";
+    }
+}
+</script>
+</body>
+</html>

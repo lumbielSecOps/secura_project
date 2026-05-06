@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #f0ede6;
+            color: #555;
+            font-weight: 500;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .badge-send {
+            background: #e1f5ee;
+            color: #0c6e3a;
+        }
+
+        .badge-view {
+            background: #e6f1fb;
+            color: #0c447c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>Admin Dashboard</h2>
+        <p style="font-size:13px;color:#555;margin-bottom: 4px;">All system activity is recorded here</p>
+        <h3>Register New User</h3>
+
+        <label>Username:</label>
+        <input id="reg_username" type="text" placeholder="Username"><br>
+
+        <label>Email:</label>
+        <input id="reg_email" type="email" placeholder="Email"><br>
+
+        <label>Password:</label>
+        <input id="reg_password" type="password" placeholder="Temporary Password"><br>
+
+        <label>Role:</label>
+        <select id="reg_role">
+            <option value="doctor">Doctor</option>
+            <option value="patient">Patient</option>
+            <option value="admin">Admin</option>
+        </select><br><br>
+
+        <button onclick="registerUser()">Register User</button>
+
+        <hr style="margin:25px 0;">
+
+        <h3>Audit Logs</h3>
+        <button onclick="loadLogs()">Load Audit Logs</button>
+        <button onclick="logout()" style="margin-top: 10px;">Logout</button>
+        <div id="msg" class="msg" style="display:none"></div>
+        <div id="log-container"></div>
+
+    </div>
+
+
+    <!-- JavaScript functionalities-->
+    <script>
+        function checkAccess() {
+            const token = localStorage.getItem("token");
+            const role = localStorage.getItem("role");
+
+            if (!token || role !== "admin") {
+                window.location.href = 'index.html';
+            }
+        }
+
+        checkAccess();
+
+        async function registerUser() {
+            const token = localStorage.getItem("token");
+
+            const username = document.getElementById("reg_username").value;
+            const email = document.getElementById("reg_email").value;
+            const password = document.getElementById("reg_password").value;
+            const role = document.getElementById("reg_role").value;
+
+            const m = document.getElementById("msg");
+            m.style.display = "block";
+
+            if (!username || !email || !password) {
+                m.className = "msg error";
+                m.textContent = "Please fill in all fields.";
+                return;
+            }
+
+            const res = await fetch(
+                `http://127.0.0.1:8000/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&role=${role}`,
+                {
+                    method: "POST",
+                    headers: { "accept": "application/json", "Authorization": `Bearer ${token}` }
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                m.className = "msg success";
+                m.textContent = "User account created successfully.";
+
+                document.getElementById("reg_username").value = "";
+                document.getElementById("reg_email").value = "";
+                document.getElementById("reg_password").value = "";
+            } else {
+                m.className = "msg error";
+                m.textContent = data.detail || "Registration failed.";
+            }
+        }
+
+        async function loadLogs() {
+            const token = localStorage.getItem("token");
+
+            const res = await fetch('http://127.0.0.1:8000/audit-logs',
+                { headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
+            );
+            const data = await res.json();
+
+            const m = document.getElementById('msg');
+            const container = document.getElementById('log-container');
+
+            if (res.ok && data.logs.length > 0) {
+                m.style.display = 'none';
+                container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr>
+                    </thead>
+                    <tbody>
+                        ${data.logs.map(log => `
+    <tr>
+        <td>${log.id}</td>
+        <td>${log.username}</td>
+        <td>${log.role}</td>
+        <td>
+            <span class="badge ${log.action.includes("Send") ? "badge-send" :
+                        log.action.includes("View") || log.action.includes("Download")
+                            ? "badge-view"
+                            : ""
+                    }">
+                ${log.action}
+            </span>
+        </td>
+        <td>${log.timestamp}</td>
+    </tr>
+`).join("")}
+                    </tbody>
+                </table>
+                <p style="font-size:12px;color:#999;margin-top:8px">${data.logs.length} records</p>
+            `;
+            } else {
+                container.innerHTML = '';
+                m.style.display = 'block';
+                m.className = 'msg error';
+                m.textContent = 'No logs found';
+            }
+        }
+
+        async function logout() {
+            const token = localStorage.getItem("token");
+
+            await fetch("http://127.0.0.1:8000/logout",
+                { method: 'POST', headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
+            );
+
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

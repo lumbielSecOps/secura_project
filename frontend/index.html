@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Secura Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="card">
+        <h2 style="margin-bottom: 30px;">Secura Login</h2>
+
+        <!--Add username field-->
+        <label for="username">Username:</label>
+        <input id="username" type="text" placeholder="Username"><br>
+        <!--Add password field-->
+        <label for="password">Password:</label>
+        <input id="password" type="password" placeholder="Password"><br>
+
+        <!--Add login button-->
+        <button type="button" onclick="login()">Login</button>
+
+        <div id="msg" class="msg" style="display:none"></div>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const m = document.getElementById('msg');
+            m.style.display = 'block';
+
+            if (!username || !password){
+                m.className = "msg error";
+                m.textContent = "Please enter both username and password";
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append("username", username);
+            formData.append("password", password);
+
+            const res = await fetch(`http://127.0.0.1:8000/login`,
+                { method: 'POST', headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: formData}
+            );
+
+            const data = await res.json();
+            const userRole = data.role.toLowerCase();
+
+            if (res.ok) {
+                localStorage.setItem("token", data.access_token);
+                localStorage.setItem("role", userRole);
+                localStorage.setItem("username", data.username);
+
+                m.className = 'msg success';
+                m.textContent = 'Login successful, redirecting...';
+
+
+                setTimeout(() => {
+                    if (userRole === 'doctor') {
+                        window.location.href = 'doctor.html';
+                    } else if (userRole === 'patient') {
+                        window.location.href = 'patient_dashboard.html';
+                    } else if (userRole === 'admin') {
+                        window.location.href = 'admin.html';
+                    }
+                }, 800);
+
+            } else {
+                m.className = 'msg error';
+                m.textContent = data.message || 'Login failed';
+            }
+        }
+    </script>
+</body>
+</html>
