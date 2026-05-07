@@ -253,6 +253,20 @@ def preview_document(document_id: int, token: str):
         }
     )
 
+#get patients for doctor
+@router.get("/patients")
+def get_patients(current_user: dict = Depends(require_role("doctor"))):
+    db = SessionLocal()
+    patients = db.query(User).filter(User.role == "patient").all()
+
+    data = [
+        {"id": patient.id,"username": patient.username}
+        for patient in patients
+    ]
+
+    db.close()
+    return {"patients": data}
+
 #admin overview
 @router.get("/admin-overview")
 def admin_overview(current_user: dict = Depends(require_role("admin"))):

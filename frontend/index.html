@@ -7,18 +7,25 @@
 </head>
 
 <body class="login-page">
-    <div class="card">
-        <h2 style="margin-bottom: 30px;">Secura Login</h2>
+    <div class="login-card">
+        <img src="secura-login.png" alt="Secure document sharing" class="login-image">
+        
+        <h1>Secura</h1>
+        <p class="login-subtitle"> Secure Document Sharing Platform</p>
 
         <!--Add username field-->
         <label for="username">Username:</label>
-        <input id="username" type="text" placeholder="Username"><br>
+        <input id="username" type="text" placeholder="Enter username"><br>
         <!--Add password field-->
         <label for="password">Password:</label>
-        <input id="password" type="password" placeholder="Password"><br>
+        <input id="password" type="password" placeholder="Enter password"><br>
 
         <!--Add login button-->
         <button type="button" onclick="login()">Login</button>
+
+        <p class="register-link">
+            Patient? <a href="patient_registration.html">Register here</a>
+        </p>
 
         <div id="msg" class="msg" style="display:none"></div>
     </div>

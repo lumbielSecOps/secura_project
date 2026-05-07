@@ -280,3 +280,60 @@ button {
             border: 1px solid d8e0e8;
             border-radius: 8px;
         }
+
+        .login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 460px;
+    background: white;
+    border: 1px solid #d8e0e8;
+    border-radius: 14px;
+    padding: 30px;
+}
+
+.login-image {
+    width: 100%;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.login-card h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.login-subtitle {
+    color: #65758b;
+    margin: 6px 0 24px;
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+.register-link a {
+    color: #0b1f33;
+    font-weight: bold;
+}
+
+.secondary-btn {
+    margin-top: 10px;
+    background: #f1f5f9;
+    color: #0b1f33;
+    border: 1px solid #d8e0e8;
+}
+
+.secondary-btn:hover {
+    background: #e2e8f0;
+}

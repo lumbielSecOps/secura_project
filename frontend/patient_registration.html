@@ -5,22 +5,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-<div class="card">
-    <h2>Patient Registration</h2>
-    <p style="font-size:13px;color:#555;">Create a patient account</p>
+<body class="login-page">
+<div class="login-card">
+    <h1>Create account</h1>
+    <p class="login-subtitle" style="font-size:13px;color:#555;">Register as a patient to securely receive medical documents.</p>
 
     <label>Username:</label>
-    <input id="username" type="text" placeholder="Username"><br>
+    <input id="username" type="text" placeholder="Enter username"><br>
 
     <label>Email:</label>
-    <input id="email" type="email" placeholder="Email"><br>
+    <input id="email" type="email" placeholder="Enter email"><br>
 
     <label>Password:</label>
-    <input id="password" type="password" placeholder="Password"><br>
+    <input id="password" type="password" placeholder="Create password"><br>
 
-    <button onclick="registerPatient()">Register</button>
-    <button onclick="window.location.href='login.html'" style="margin-top:10px;">Back to Login</button>
+    <button onclick="registerPatient()">Register Patient Account</button>
+    
+    <button type= "button" onclick='window.location.href="index.html"'>Back to Login</button>
 
     <div id="msg" class="msg" style="display:none"></div>
 </div>
@@ -41,7 +42,7 @@ async function registerPatient() {
     }
 
     const res = await fetch(
-        `http://127.0.0.1:8000/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&role=patient`,
+        `http://127.0.0.1:8000/patient-register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
         {
             method: "POST",
             headers: { "accept": "application/json" }

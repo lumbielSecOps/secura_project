@@ -41,8 +41,10 @@
                     <div class="info-value" id="notification-text">No documents loaded yet.</div>
                 </div>
 
-                <label for="receiver_id">Your Patient ID</label>
-                <input id="receiver_id" type="number" placeholder="Enter your patient ID">
+                <input id="receiver_id" type="hidden">
+                <p style="color:#65758b;">
+                    Documents assigned to your account will appear below.
+                </p>
 
                 <button type="button" class="primary-btn" onclick="getDocs()">Load Documents</button>
 
@@ -112,6 +114,8 @@
         checkAccess();
 
         const username = localStorage.getItem("username") || "Patient";
+        const userId = localStorage.getItem("user_id");
+        document.getElementById("receiver_id").value = userId;
         document.getElementById("sidebar-name").textContent = username;
         document.getElementById("profile-username").textContent = username;
         document.getElementById("welcome-text").textContent = "Welcome to Secura, " + username + ".";
@@ -170,7 +174,7 @@
                     Sent by: ${d.sender_name} | Doctor ID: ${d.sender_id}
                 </p>
                 <p style="margin:4px 0 10px;color:#65758b;font-size:13px;">
-                    Status: ${d.status} | Document ID: ${d.id}
+                    Status: received | Document ID: ${d.id}
                 </p>
 
                 <button type="button" class="primary-btn" onclick="viewDocument(${d.id})">
@@ -210,7 +214,7 @@
                 Sent by: ${d.sender_name} | Doctor ID: ${d.sender_id}
             </p>
             <p style="margin:4px 0 0;color:#65758b;font-size:13px;">
-                Status: ${d.status} | Document ID: ${d.id}
+                Status: received | Document ID: ${d.id}
             </p>
         </div>
     `).join("");
