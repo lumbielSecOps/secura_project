@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        table {
+        table tr:hover {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
@@ -15,7 +15,7 @@
 
         th {
             text-align: left;
-            padding: 10px 12px;
+            padding: 12px;
             background: #f0ede6;
             color: #555;
             font-weight: 500;
@@ -23,7 +23,7 @@
         }
 
         td {
-            padding: 10px 12px;
+            padding: 12px;
             border-bottom: 1px solid #f0f0f0;
         }
 
@@ -71,7 +71,7 @@
         <main class="main">
             <div class="top">
                 <h1 id="page-title">Overview</h1>
-                <p>Monitor users, documents, logs, and system activity.</p>
+                <p>View registered users, document activity, and system security records.</p>
             </div>
             <!--  Overview-->
             <section class="panel active" id="panel-overview">
@@ -155,7 +155,7 @@
                 <h2>Alerts</h2>
                 <div class="info-card">
                     <div class="info-label">Security Alerts</div>
-                    <div class="info-value">No active alerts</div>
+                    <div class="info-value">No unusual activity detected</div>
                 </div>
             </section>
 
@@ -424,7 +424,7 @@
             localStorage.clear();
             window.location.href = 'index.html';
         }
-        
+
     loadOverview();
     </script>
 </body>
