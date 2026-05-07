@@ -44,6 +44,16 @@ async def send_document(
 
     sender_id = current_user.get("user_id")
 
+    receiver = db.query(User).filter(User.id == receiver_id).first()
+
+    if not receiver:
+        db.close()
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    if receiver.role.lower() != "patient":
+        db.close()
+        raise HTTPException(status_code=403, detail="Documents can only be sent to patients")
+    
     # validate that sender and receiver are not the same 
     if sender_id == receiver_id:
         db.close()
@@ -206,3 +216,27 @@ def get_audit_logs(
     db.close()
 
     return {"logs": formatted_logs}
+
+@router.get("/doctor-history")
+def doctor_history(current_user: dict = Depends(require_role("doctor"))):
+    db = SessionLocal()
+
+    documents = db.query(Document).filter(Document.sender_id == current_user.get("user_id")).order_by(Document.id.desc()).all()
+
+    history = []
+
+    for doc in documents:
+        patient = db.query(User).filter(User.id == doc.receiver_id).first()
+
+        history.append({
+            "document_id": doc.id,
+            "filename": doc.filename,
+            "patient_id": doc.receiver_id,
+            "patient_name": patient.username if patient else "Unknown Patient",
+            "status": doc.status,
+            "sent_by": current_user.get("user_id")
+        })
+    
+    db.close()
+
+    return {"history": history}

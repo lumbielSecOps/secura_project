@@ -2,31 +2,95 @@
 <html>
 
 <head>
-    <title>Doctor Dashboard</title>
+    <title>Secura - Doctor Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="card">
-        <h2>Doctor Dashboard</h2>
-        <p style="font-size:13px;color:#555;margin-bottom: 20px;">Send a medical document to patient</p>
+    <div class="layout">
 
-        <!--Add username field-->
-        <label for="doctor_id">Doctor ID:</label>
-        <input id="sender_id" type="number" placeholder="Doctor ID"><br>
-        <label for="patient_id">Patient ID:</label>
-        <input id="receiver_id" type="number" placeholder="Patient ID"><br>
+        <aside class="sidebar">
+            <div class="brand">Secura</div>
+            <div class="subtitle">Secure Medical Records</div>
 
-        <label for="file">Select Document:</label>
-        <input id="file" type="file" onchange="showSelectedFile()"><br>
+            <div class="user-box">
+                <div class="user-name" id="sidebar-name">Doctor</div>
+                <div class="user-role">Healthcare Provider</div>
+            </div>
 
-        <div id="selected-file" style="font-size: 13px; color: #555; margin-bottom: 4px;">No file selected</div>
-        <button onclick="sendDoc()">Send Document</button>
-        <button onclick="logout()" style="margin-top: 10px;">Logout</button>
+            <div class="nav">
+                <button class="active" onclick="showPanel('send', this)">Send Document</button>
+                <button onclick="showPanel('history', this)">Sent History</button>
+                <button onclick="showPanel('profile', this)">My Profile</button>
+                <button class="logout" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
 
-        <div id="msg" class="msg" style="display:none"></div>
+        <main class="main">
+            <div class="top">
+                <h1 id="page-title">Send Document</h1>
+                <p>Upload and send an encrypted medical document to a patient.</p>
+            </div>
+            <!-- Send Document page-->
+            <section class="panel active" id="panel-send">
+                <h2>Send Secure Document</h2>
+
+                <label for="receiver_id">Patient ID</label>
+                <input id="receiver_id" type="number" placeholder="Enter patient ID">
+
+                <label for="file">Medical Document</label>
+                <div class="file-box">
+                    <input id="file" type="file" onchange="showSelectedFile()">
+                    <div id="selected-file" class="selected-file">No file selected</div>
+                </div>
+
+                <button type="button" class="primary-btn" onclick="sendDoc()">
+                    Send Encrypted Document
+                </button>
+
+                <div id="msg" class="msg"></div>
+            </section>
+
+            <!-- Sent Document History page-->
+            <section class="panel" id="panel-history">
+                <h2>Sent Document History</h2>
+                <p style="color:#65758b;">Documents sent from your doctor account.</p>
+
+                <button type="button" class="primary-btn" onclick="loadDoctorHistory()">Refresh History</button>
+                <div id="history-list" style="margin-top:18px;"></div>
+            </section>
+
+            <!-- Doctor Profile page-->
+            <section class="panel" id="panel-profile">
+                <h2>Doctor Profile</h2>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Username</div>
+                        <div class="info-value" id="profile-username">—</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Role</div>
+                        <div class="info-value">Doctor</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Authentication</div>
+                        <div class="info-value">Verified</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Document Storage</div>
+                        <div class="info-value">Encrypted</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
     </div>
 
+    <!-- funtionalities-->
     <script>
         function checkAccess() {
             const token = localStorage.getItem("token");
@@ -38,6 +102,28 @@
         }
 
         checkAccess();
+
+        function showPanel(panelName, button) {
+            document.querySelectorAll(".panel").forEach(panel => {
+                panel.classList.remove("active"); 
+            });
+
+            document.querySelectorAll(".nav button").forEach(btn => {
+                btn.classList.remove("active"); 
+            });
+
+            document.getElementById("panel-" + panelName).classList.add("active");
+                button.classList.remove("active"); 
+
+            document.getElementById("page-title").textContent =
+                panelName === "send" ? "Send Document" :
+                panelName === "history" ? "Sent Document History" :
+                "My Profile";
+
+            if (panelName === "history"){
+                loadDoctorHistory();
+            }
+        }
 
         function showSelectedFile() {
             const fileInput = document.getElementById("file");
@@ -79,10 +165,64 @@
             );
 
             const data = await res.json();
-            m.className = 'msg ' + (res.ok ? 'success' : 'error');
-            m.textContent = res.ok ? 'Encrypted document sent successfully' : (data.detail || 'Error sending document');
+
+            if(res.ok) {
+                m.className = 'msg success';
+                m.style.display = 'block';
+                m.textContent = 'Encrypted document sent successfully';
+
+                setTimeout(() => {
+                    document.getElementById('receiver_id').value = '';
+                    fileInput.value = '';
+                    document.getElementById('selected-file').textContent = 'No file selected';
+                }, 5000);
+
+                setTimeout(() => {
+                 m.style.opacity = '0';
+                
+                setTimeout(() => {
+                    m.style.display = 'none';
+                    m.style.opacity = '1';
+                }, 500);
+            }, 5500);
+
+            }else {
+                m.className = 'msg error';
+                m.style.display = 'block';
+                m.textContent = data.detail || 'Error sending document';
+            }
         }
 
+        async function loadDoctorHistory() {
+            const token = localStorage.getItem("token");
+            const historyList = document.getElementById("history-list");
+
+            const res = await fetch("http://127.0.0.1:8000/doctor-history", {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.history.length > 0) {
+                historyList.innerHTML = data.history.map(item => `
+            <div style="border:1px solid #d8e0e8;border-radius:10px;padding:14px;margin-bottom:10px;background:#f8fafc;">
+                <strong>${item.filename}</strong>
+                <p style="margin:6px 0 0;color:#65758b;font-size:14px;">
+                    Sent to: ${item.patient_name} | Patient ID: ${item.patient_id}
+                </p>
+                <p style="margin:4px 0 0;color:#65758b;font-size:13px;">
+                    Status: ${item.status} | Document ID: ${item.document_id}
+                </p>
+            </div>
+        `).join("");
+            } else {
+                historyList.innerHTML = `
+            <p style="color:#65758b;">No documents sent yet.</p>
+        `;
+            }
+        }
         async function logout() {
             const token = localStorage.getItem("token");
 
