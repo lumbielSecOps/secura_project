@@ -5,6 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from database import SessionLocal
 from models import Document, Audit_Log, User
 from datetime import datetime
+from security import decode_access_token
 from auth_routes import get_current_user, require_role
 import os, mimetypes
 
@@ -123,7 +124,19 @@ def get_documents(receiver_id: int, current_user: dict = Depends(require_role("p
         db.close()
         return {"message": "No documents found for this user"}
 
-    documents_data = [jsonable_encoder(document) for document in documents]
+    documents_data = []
+
+    for doc in documents:
+            sender = db.query(User).filter(User.id == doc.sender_id).first()
+
+            documents_data.append({
+                "id": doc.id,
+                "filename": doc.filename,
+                "sender_id": doc.sender_id,
+                "sender_name": sender.username if sender else "Unknown Doctor",
+                "receiver_id": doc.receiver_id,
+                "status": doc.status
+            })
 
     # log the action
     new_log = Audit_Log(
@@ -188,6 +201,54 @@ def download_document(
         decrypted_path,
         media_type=media_type or "application/pdf",
         headers= {"Content-Disposition": f'inline; filename="{original_filename}"'}
+    )
+
+#preview document
+@router.get("/preview-document/{document_id}")
+def preview_document(document_id: int, token: str):
+    payload = decode_access_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    if payload.get("role").lower() != "patient":
+        raise HTTPException(status_code=403, detail="Only patients can preview documents")
+
+    db = SessionLocal()
+
+    document = db.query(Document).filter(Document.id == document_id).first()
+
+    if not document:
+        db.close()
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if document.receiver_id != payload.get("user_id"):
+        db.close()
+        raise HTTPException(status_code=403, detail="You can only preview your own documents")
+
+    original_filename = document.filename
+
+    with open(document.file_path, "rb") as f:
+        encrypted_content = f.read()
+
+    decrypted_content = fernet.decrypt(encrypted_content)
+
+    safe_preview_filename = f"preview_{document.id}_{original_filename}"
+    preview_path = os.path.join(DECRYPT_DIR, safe_preview_filename)
+
+    with open(preview_path, "wb") as f:
+        f.write(decrypted_content)
+
+    db.close()
+
+    media_type, _ = mimetypes.guess_type(original_filename)
+
+    return FileResponse(
+        preview_path,
+        media_type=media_type or "application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{original_filename}"'
+        }
     )
 
 #get audit logs

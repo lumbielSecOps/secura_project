@@ -2,116 +2,257 @@
 <html>
 
 <head>
-    <title>Secura_Patient</title>
+    <title>Secura - Patient Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
+
 <body>
-    <div class="card">
-        <h2>Patient Dashboard</h2>
+    <div class="layout">
 
-        <input id="receiver_id" type="number" placeholder="Your Patient ID">
+        <aside class="sidebar">
+            <div class="brand">Secura</div>
+            <div class="subtitle">Secure Medical Records</div>
 
-        <button type="button" onclick="getDocs()">Get Document</button>
-        <button type="button" onclick="logout()" style="margin-top: 10px;">Logout</button>
+            <div class="user-box">
+                <div class="user-name" id="sidebar-name">Patient</div>
+                <div class="user-role">System User</div>
+            </div>
 
-        <div id="msg" class="msg" style="display:none"></div>
-        <div id="docs" style="margin-top:16px"></div>
-        <div id="viewer" style="margin-top:20px;"></div>
+            <div class="nav">
+                <button class="active" onclick="showPanel('documents', this)">My Documents</button>
+                <button onclick="showPanel('history', this)">Received History</button>
+                <button onclick="showPanel('profile', this)">My Profile</button>
+                <button class="logout" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="top">
+                <h1 id="page-title">My Documents</h1>
+                <p id="welcome-text">Welcome to Secura.</p>
+            </div>
+
+            <section class="panel active" id="panel-documents">
+                <h2>Received Documents</h2>
+
+                <div class="info-card" style="margin-bottom:16px;">
+                    <div class="info-label">Notification</div>
+                    <div class="info-value" id="notification-text">No documents loaded yet.</div>
+                </div>
+
+                <label for="receiver_id">Your Patient ID</label>
+                <input id="receiver_id" type="number" placeholder="Enter your patient ID">
+
+                <button type="button" class="primary-btn" onclick="getDocs()">Load Documents</button>
+
+                <div id="msg" class="msg"></div>
+                <div id="docs" style="margin-top:18px;"></div>
+                <div id="viewer" style="margin-top:20px;"></div>
+            </section>
+
+            <section class="panel" id="panel-history">
+                <h2>Received Document History</h2>
+                <p style="color:#65758b;">Filter received documents by filename, doctor, or status.</p>
+
+                <input id="history-filter" type="text" placeholder="Search document history..."
+                    oninput="renderHistory()">
+
+                <div id="history-list" style="margin-top:18px;"></div>
+            </section>
+
+            <section class="panel" id="panel-profile">
+                <h2>Patient Profile</h2>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Username</div>
+                        <div class="info-value" id="profile-username">—</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Role</div>
+                        <div class="info-value">Patient</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Authentication</div>
+                        <div class="info-value">Verified</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Document Access</div>
+                        <div class="info-value">Own documents only</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="doc-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeDocumentModal()">Close</button>
+            <h3>Document Preview</h3>
+            <iframe id="doc-frame"></iframe>
+        </div>
     </div>
 
     <script>
+        let receivedDocuments = [];
+
         function checkAccess() {
             const token = localStorage.getItem("token");
             const role = localStorage.getItem("role");
 
-            if (!token || role !== "patient") {
-                window.location.href = 'index.html';
+            if (!token || role?.toLowerCase() !== "patient") {
+                window.location.href = "index.html";
             }
         }
 
         checkAccess();
+
+        const username = localStorage.getItem("username") || "Patient";
+        document.getElementById("sidebar-name").textContent = username;
+        document.getElementById("profile-username").textContent = username;
+        document.getElementById("welcome-text").textContent = "Welcome to Secura, " + username + ".";
+
+        function showPanel(panelName, button) {
+            document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
+            document.querySelectorAll(".nav button").forEach(btn => btn.classList.remove("active"));
+
+            document.getElementById("panel-" + panelName).classList.add("active");
+            button.classList.add("active");
+
+            document.getElementById("page-title").textContent =
+                panelName === "documents" ? "My Documents" :
+                    panelName === "history" ? "Received History" :
+                        "My Profile";
+
+            if (panelName === "history") {
+                renderHistory();
+            }
+        }
+
         async function getDocs() {
             const token = localStorage.getItem("token");
-            const rid = document.getElementById('receiver_id').value;
-            const m = document.getElementById('msg');
-            const div = document.getElementById('docs');
+            const rid = document.getElementById("receiver_id").value;
+            const m = document.getElementById("msg");
+            const div = document.getElementById("docs");
+            const notification = document.getElementById("notification-text");
+
+            m.style.display = "block";
 
             if (!rid) {
-                m.style.display = "block";
                 m.className = "msg error";
-                m.textContent = "Please enter your Patient ID"
+                m.textContent = "Please enter your patient ID.";
                 return;
             }
-            const res = await fetch(`http://127.0.0.1:8000/documents/${rid}`,
-                { headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
-            );
+
+            const res = await fetch(`http://127.0.0.1:8000/documents/${rid}`, {
+                headers: {
+                    "accept": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
 
             const data = await res.json();
 
             if (res.ok && data.documents) {
-                m.style.display = 'none';
-                div.innerHTML = data.documents.map(d => `
-                <div style="border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:10px">
-                    <p style="margin:0 0 4px;font-weight:500">${d.filename}</p>
-                    <p style="margin:0;font-size:12px;color:#777">From sender ID: ${d.sender_id} &nbsp;|&nbsp; Status: ${d.status}</p>
-                
-                    <button onclick="downloadDocument(${d.id})">View/Download</button>
-                    </div>
-            `).join('');
+                receivedDocuments = data.documents;
+
+                m.style.display = "none";
+                notification.textContent = `You have ${receivedDocuments.length} received document(s).`;
+
+                div.innerHTML = receivedDocuments.map(d => `
+            <div style="border:1px solid #d8e0e8;border-radius:10px;padding:14px;margin-bottom:10px;background:#f8fafc;">
+                <strong>${d.filename}</strong>
+                <p style="margin:6px 0 0;color:#65758b;font-size:14px;">
+                    Sent by: ${d.sender_name} | Doctor ID: ${d.sender_id}
+                </p>
+                <p style="margin:4px 0 10px;color:#65758b;font-size:13px;">
+                    Status: ${d.status} | Document ID: ${d.id}
+                </p>
+
+                <button type="button" class="primary-btn" onclick="viewDocument(${d.id})">
+                    View Document
+                </button>
+            </div>
+        `).join("");
+
             } else {
-                div.innerHTML = '';
-                m.style.display = 'block';
-                m.className = 'msg error';
-                m.textContent = 'No documents found';
+                receivedDocuments = [];
+                div.innerHTML = "";
+                notification.textContent = "No new documents found.";
+                m.className = "msg error";
+                m.textContent = data.detail || "No documents found.";
             }
         }
 
-        async function downloadDocument(documentId) {
-            const token = localStorage.getItem("token");
-            const viewer = document.getElementById("viewer");
+        function renderHistory() {
+            const filter = document.getElementById("history-filter").value.toLowerCase();
+            const historyList = document.getElementById("history-list");
 
-            const res = await fetch(
-                `http://127.0.0.1:8000/download-document/${documentId}`,
-                {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                }
+            const filteredDocs = receivedDocuments.filter(d =>
+                d.filename.toLowerCase().includes(filter) ||
+                d.sender_name.toLowerCase().includes(filter) ||
+                d.status.toLowerCase().includes(filter)
             );
 
-            if (!res.ok) {
-                const data = await res.json();
-                alert(data.detail || "Could not open document.");
+            if (filteredDocs.length === 0) {
+                historyList.innerHTML = `<p style="color:#65758b;">No matching document history found.</p>`;
                 return;
             }
 
-            const blob = await res.blob();
-            const fileURL = URL.createObjectURL(blob);
+            historyList.innerHTML = filteredDocs.map(d => `
+        <div style="border:1px solid #d8e0e8;border-radius:10px;padding:14px;margin-bottom:10px;background:#f8fafc;">
+            <strong>${d.filename}</strong>
+            <p style="margin:6px 0 0;color:#65758b;font-size:14px;">
+                Sent by: ${d.sender_name} | Doctor ID: ${d.sender_id}
+            </p>
+            <p style="margin:4px 0 0;color:#65758b;font-size:13px;">
+                Status: ${d.status} | Document ID: ${d.id}
+            </p>
+        </div>
+    `).join("");
+        }
 
-            viewer.innerHTML = `
-        <h3 style="font-size:16px;margin-bottom:10px;">Document Preview</h3>
+        function viewDocument(documentId) {
+            const token = localStorage.getItem("token");
+
+            const modalContent = document.querySelector(".modal-content");
+
+            modalContent.innerHTML = `
+        <button class="modal-close" onclick="closeDocumentModal()">Close</button>
+        <h3>Document Preview</h3>
         <iframe 
-            src="${fileURL}" 
-            width="100%" 
-            height="500px"
-            style="border:1px solid #ddd;border-radius:8px;">
+            src="http://127.0.0.1:8000/preview-document/${documentId}?token=${token}"
+            style="width:100%;height:80vh;border:1px solid #d8e0e8;border-radius:8px;">
         </iframe>
     `;
-        viewer.scrollIntoView({ behavior: 'smooth' });
+
+            document.getElementById("doc-modal").style.display = "block";
         }
+
+        function closeDocumentModal() {
+            document.getElementById("doc-modal").style.display = "none";
+        }
+
 
         async function logout() {
             const token = localStorage.getItem("token");
 
-            await fetch("http://127.0.0.1:8000/logout",
-                { method: 'POST', headers: { 'accept': 'application/json', "Authorization": `Bearer ${token}` } }
-            );
+            await fetch("http://127.0.0.1:8000/logout", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
 
             localStorage.clear();
-            window.location.href = 'index.html';
+            window.location.href = "index.html";
         }
     </script>
+
 </body>
 
 </html>

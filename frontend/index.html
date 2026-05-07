@@ -51,6 +51,7 @@
                 localStorage.setItem("token", data.access_token);
                 localStorage.setItem("role", userRole);
                 localStorage.setItem("username", data.username);
+                localStorage.setItem("user_id", data.user_id);
 
                 m.className = 'msg success';
                 m.textContent = 'Login successful, redirecting...';
@@ -58,11 +59,11 @@
 
                 setTimeout(() => {
                     if (userRole === 'doctor') {
-                        window.location.href = 'doctor.html';
+                        window.location.href = 'doctor_dashboard.html';
                     } else if (userRole === 'patient') {
                         window.location.href = 'patient_dashboard.html';
                     } else if (userRole === 'admin') {
-                        window.location.href = 'admin.html';
+                        window.location.href = 'admin_dashboard.html';
                     }
                 }, 800);
 

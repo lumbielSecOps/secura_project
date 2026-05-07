@@ -118,7 +118,7 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     })
 
     db.close()
-    return {"access_token": token, "token_type": "bearer", "role": user.role}
+    return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username, "user_id": user.id}
 
 #get current user endpoint
 @router.get("/me")
