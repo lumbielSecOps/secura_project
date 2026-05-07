@@ -1,3 +1,5 @@
+from asyncio import log
+
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from cryptography.fernet import Fernet
@@ -250,6 +252,72 @@ def preview_document(document_id: int, token: str):
             "Content-Disposition": f'inline; filename="{original_filename}"'
         }
     )
+
+#admin overview
+@router.get("/admin-overview")
+def admin_overview(current_user: dict = Depends(require_role("admin"))):
+    db = SessionLocal()
+
+    total_users = db.query(User).count()
+    total_documents = db.query(Document).count()
+    total_audit_logs = db.query(Audit_Log).count()
+
+    recent_audit_logs = db.query(Audit_Log).order_by(Audit_Log.id.desc()).limit(5).all()
+
+    db.close()
+
+    return {
+        "total_users": total_users,
+        "total_documents": total_documents,
+        "total_audit_logs": total_audit_logs,
+        "alerts": 0,
+            "recent_activity": [
+                {
+                    "id": log.id,
+                    "user_id": log.user_id,
+                    "action": log.action,
+                    "timestamp": log.timestamp
+                }
+                for log in recent_audit_logs
+            ]}
+#admin get all users
+@router.get("/admin-users")
+def admin_users(current_user: dict = Depends(require_role("admin"))):
+    db = SessionLocal()
+
+    users = db.query(User).order_by(User.id.desc()).all()
+
+    users_data = [{ "id": user.id,"username": user.username,"email": user.email,"role": user.role
+    } for user in users]
+
+    db.close()
+    return {"users": users_data}
+
+#admin get all documents
+@router.get("/admin-documents")
+def admin_documents(current_user: dict = Depends(require_role("admin"))):
+    db = SessionLocal()
+
+    document = db.query(Document).order_by(Document.id.desc()).all()
+
+    document_data = []
+
+    for doc in document:
+        sender = db.query(User).filter(User.id == doc.sender_id).first()
+        receiver = db.query(User).filter(User.id == doc.receiver_id).first()
+
+        document_data.append({
+            "id": doc.id,
+            "filename": doc.filename,
+            "sender_id": doc.sender_id,
+            "sender_name": sender.username if sender else "Unknown Sender",
+            "receiver_id": doc.receiver_id,
+            "receiver_name": receiver.username if receiver else "Unknown Receiver",
+            "status": doc.status,
+        })
+
+    db.close()
+    return {"documents": document_data}
 
 #get audit logs
 @router.get("/audit-logs")
