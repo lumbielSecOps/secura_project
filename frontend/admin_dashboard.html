@@ -48,7 +48,7 @@
 
 <body>
     <div class="layout">
-
+        <!-- Sidebar navigation-->
         <aside class="sidebar">
             <div class="brand">Secura</div>
             <div class="subtitle">Admin Console</div>
@@ -166,6 +166,7 @@
 
     <!-- JavaScript functionalities-->
     <script>
+        // Check if user is authenticated and has admin role
         function checkAccess() {
             const token = localStorage.getItem("token");
             const role = localStorage.getItem("role");
@@ -174,13 +175,13 @@
                 window.location.href = 'index.html';
             }
         }
-
         checkAccess();
 
         // Display username in sidebar
         const username = localStorage.getItem("username") || "Admin";
         document.getElementById("sidebar-name").textContent = username;
 
+        
         function showPanel(panelName, button) {
             document.querySelectorAll(".panel").forEach(btn => {
                 btn.classList.remove("active");
