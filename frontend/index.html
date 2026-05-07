@@ -5,7 +5,7 @@
     <title>Secura Login</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
+<!--Login page for all users of the system-->
 <body class="login-page">
     <div class="login-card">
         <img src="secura-login.png" alt="Secure document sharing" class="login-image">
@@ -23,6 +23,7 @@
         <!--Add login button-->
         <button type="button" onclick="login()">Login</button>
 
+        <!--Add registration link-->
         <p class="register-link">
             Patient? <a href="patient_registration.html">Register here</a>
         </p>
@@ -31,6 +32,7 @@
     </div>
 
     <script>
+        //Login function to authenticate users and redirect based on role
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;

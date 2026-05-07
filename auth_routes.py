@@ -5,8 +5,8 @@ from database import SessionLocal
 from models import User
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")      #tokens come from login endpoint
-blacklisted_tokens = set()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")      #OAuth2 scheme extracts bearer tokens from protected requests
+blacklisted_tokens = set()      #invalidate tokens on logout 
 
 #every request made is passed through this function to verify the token and extract user info
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -39,8 +39,7 @@ def require_role(required_role: str):
 def register_user(username: str, email: str, password: str, role: str, current_user: dict = Depends(require_role("admin"))):
     db = SessionLocal()
     role = role.lower()
-
-
+    
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         db.close()
